@@ -7,6 +7,7 @@ __author__ = "TheCjw"
 
 import os
 import base64
+import subprocess
 from idaapi import *
 from idc import *
 
@@ -172,6 +173,8 @@ class KDInit_addHotkey(plugin_t):
         endaddr=GetFunctionAttr(ScreenEA(),FUNCATTR_END);
         endaddr=FindCode(endaddr,SEARCH_UP);
         Jump(endaddr);
+    def OpenCurrentDir(self):
+        subprocess.check_output('open .',shell=True)
     def init_reg_hotkey(self):
         idaapi.add_hotkey("Meta-Shift-d", self.JumpDword)
         idaapi.add_hotkey("Meta-Shift-0", self.JumpR0) 
@@ -189,6 +192,7 @@ class KDInit_addHotkey(plugin_t):
         idaapi.add_hotkey("Meta-Shift-p", self.JumpPC)
         idaapi.add_hotkey("Meta-[", self.GotoCursorFuncStart)
         idaapi.add_hotkey("Meta-]", self.GotoCursorFuncEnd)
+        idaapi.add_hotkey("Meta-Shift-o", self.OpenCurrentDir)
 
 def PLUGIN_ENTRY():
     return KDInit_addHotkey()
