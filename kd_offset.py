@@ -43,7 +43,7 @@ class KDOffset(plugin_t):
     flags=0
     wanted_name="KDOffset"
     wanted_hotkey="Meta-o"
-    comment="ida dump"
+    comment="ida KDOffset"
     help="Something helpful"
     def init(self):
         msg("Ida plugin KDOffset init.\n")
@@ -55,8 +55,9 @@ class KDOffset(plugin_t):
     ######### 插件代码
     def KDFindBase(self, modules_list, ea):
         for i in range(len(modules_list)):
-            if (modules_list[i].base < ea) and (ea < (modules_list[i].base + modules_list[i].size)):
-                return i
+            if (modules_list[i].base <= ea) and (ea < (modules_list[i].base + modules_list[i].size)):
+                if(modules_list[i].name.find(idc.SegName(ea)) >= 0):
+                    return i
         return -1
     def KDOffsetMain(self):
         key=[]
@@ -77,7 +78,7 @@ class KDOffset(plugin_t):
             offset = courrent_ea - values[listindex].base
         else:
             offset = get_fileregion_offset(courrent_ea)
-        #print("listindex: %d, ea: 0x%x" % (listindex, courrent_ea))
+        print("listindex: %d, ea: 0x%x" % (listindex, courrent_ea))
         cho=ChooserForm("goto offset", key, values=values,index=listindex, offset= offset)
         modulesobj,offset = cho.choose()
         if offset != None:

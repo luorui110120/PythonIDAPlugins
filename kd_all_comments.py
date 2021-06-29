@@ -10,8 +10,59 @@ import base64
 import json
 from idaapi import Choose2
 
+if IDA_SDK_VERSION >= 700:
+    # functions
+    IDAAPI_ScreenEA     = get_screen_ea
+    IDAAPI_IsCode       = is_code
+    IDAAPI_DelItems     = del_items
+    IDAAPI_MakeCode     = create_insn
+    IDAAPI_GetFlags     = get_full_flags
+    IDAAPI_SetColor     = set_color
+    IDAAPI_IsLoaded     = is_loaded
+    IDAAPI_HasValue     = has_value
+    IDAAPI_GetBptQty    = get_bpt_qty
+    IDAAPI_GetBptEA     = get_bpt_ea
+    IDAAPI_GetBptAttr   = get_bpt_attr
+    IDAAPI_SegStart     = get_segm_start
+    IDAAPI_SegEnd       = get_segm_end
+    IDAAPI_GetBytes     = get_bytes
+    IDAAPI_AskYN        = ask_yn
+    IDAAPI_AskFile      = ask_file
+    IDAAPI_AskLong      = ask_long
+    IDAAPI_NextHead     = next_head
+    IDAAPI_GetDisasm    = lambda a, b: tag_remove(generate_disasm_line(a, b))
+    IDAAPI_NextThat     = next_that
+    IDAAPI_Jump         = jumpto
+    # classes
+    IDAAPI_Choose       = Choose
+else:
+    # functions
+    IDAAPI_ScreenEA     = ScreenEA
+    IDAAPI_IsCode       = isCode
+    IDAAPI_DelItems     = MakeUnkn
+    IDAAPI_MakeCode     = MakeCode
+    IDAAPI_GetFlags     = getFlags
+    IDAAPI_SetColor     = SetColor
+    IDAAPI_IsLoaded     = isLoaded
+    IDAAPI_HasValue     = hasValue
+    IDAAPI_GetBptQty    = GetBptQty
+    IDAAPI_GetBptEA     = GetBptEA
+    IDAAPI_GetBptAttr   = GetBptAttr
+    IDAAPI_SegStart     = SegStart
+    IDAAPI_SegEnd       = SegEnd
+    IDAAPI_GetBytes     = get_many_bytes
+    IDAAPI_AskYN        = AskYN
+    IDAAPI_AskFile      = AskFile
+    IDAAPI_AskLong      = AskLong
+    IDAAPI_NextHead     = NextHead
+    IDAAPI_GetDisasm    = GetDisasmEx
+    IDAAPI_NextThat     = nextthat
+    IDAAPI_Jump         = Jump
+    # classes
+    IDAAPI_Choose       = Choose2
 KDShowAllCommentsFilterList = ['void', 'char', 'int', 'switch', 'jump', 'size_t', 'dw', 'hFile', 'lp', 'nSize', 'Alternative']
-
+g_flags = True;
+g_c = None
 class chooser_handler_t(idaapi.action_handler_t):
     def __init__(self, thing):
         idaapi.action_handler_t.__init__(self)
@@ -28,28 +79,34 @@ class chooser_handler_t(idaapi.action_handler_t):
         return idaapi.AST_ENABLE_FOR_FORM if idaapi.is_chooser_tform(ctx.form_type) else idaapi.AST_DISABLE_FOR_FORM
 
 
-class MyChoose2(Choose2):
+class MyChoose2(IDAAPI_Choose):
 
     def __init__(self, title, nb = 5, flags=0, width=None, height=None, embedded=False, modal=False):
+        global g_flags
         self.n = 0
         self.icon = 5
         self.selcount = 0
-        self.modal = modal
-        self.popup_names = [] #["Inzert", "Del leet", "Ehdeet", "Ree frech"]
-        self.filter_list_name = "kd_all_comments_filter_list"
-        self.filter_list=self.load_config(self.filter_list_name) if self.load_config(self.filter_list_name) else []
-    #    print("self.filter_list" , self.filter_list)
-        self.filter_snap_name = "kd_all_comments_filter_snap"
-        self.filter_snap = self.get_filter_snap()
-        self.items = self.get_all_comments() #[ self.make_item() for x in xrange(0, nb+1) ]
-        Choose2.__init__(
+        
+        IDAAPI_Choose.__init__(
             self,
             title,
             [ ["Address", 16], ["T", 2], ["Instruction/Data", 60], ["Comment", 100],["Offset", 16]],
             flags = flags,
             width = width,
             height = height,
-            embedded = embedded)
+            embedded = embedded
+            )
+
+        self.modal = modal
+        #self.popup_names = [] #["Inzert", "Del leet", "Ehdeet", "Ree frech"]
+        self.popup_names = [ "Filter", "Del", "Make", "" ]
+        self.filter_list_name = "kd_all_comments_filter_list"
+        self.filter_list=self.load_config(self.filter_list_name) if self.load_config(self.filter_list_name) else []
+    #    print("self.filter_list" , self.filter_list)
+        self.filter_snap_name = "kd_all_comments_filter_snap"
+        self.filter_snap = self.get_filter_snap()
+        self.items = self.get_all_comments() #[ self.make_item() for x in xrange(0, nb+1) ]
+        
         #print("created %s" % str(self))
 
     def OnClose(self):
@@ -58,19 +115,28 @@ class MyChoose2(Choose2):
 
     def OnEditLine(self, n):
         self.items[n][1] = self.items[n][1] + "*"
+        self.Refresh()
+        return n
         #print("editing %d" % n)
 
     def OnInsertLine(self, n):
         #print("OnInsertLine %d" % n)
-        self.items.append(self.make_item())
+        #self.items.append(self.make_item())
         #self.items.append(self.filter_key())
         #print("insert line")
+        #print("OnInsertLine n:",n)
+        self.filter_key(n)
+        self.Refresh()
+        return n
 
     def OnSelectLine(self, n):
         self.selcount += 1
         ###//使用文件偏移,这样修改了 基地址 也可以条过去
+        #print("n:%d, off:ox%x"%(n,int(self.items[n][4], 16)))
+        #return n
         ea = get_fileregion_ea(int(self.items[n][4], 16))
         jumpto(ea)
+        return n
         #Warning("[%02d] selectline '%s'" % (self.selcount, n))
 
     def OnGetLine(self, n):
@@ -85,15 +151,16 @@ class MyChoose2(Choose2):
     def OnDeleteLine(self, n):
         #print("del %d " % n)
         del self.items[n]
+        self.Refresh()
         return n
 
-    def OnRefresh(self, n):
+    #def OnRefresh(self, n):
     #    print("refresh %d" % n)
-        self.filter_key(n)
-        self.Show(True)
-        test_choose2()
+        #self.filter_key(n)
+        #self.Show(True)
+        #test_choose2()
         #self.Show(False)
-        return n
+        #return n
 
     def OnGetIcon(self, n):#
         #print "geticon", n
@@ -118,8 +185,10 @@ class MyChoose2(Choose2):
             if (self.items[listindex][3] in filterlist):
                 listindexlist.append(listindex)
         listindex = len(listindexlist) - 1
-        while(listindex < 0):
+        while(listindex > 0):
             del self.items[listindexlist[listindex]]
+            #super().OnDeleteLine(listindexlist[listindex])
+            self.Refresh()
             listindex = listindex - 1
 
     def make_item(self):
@@ -219,8 +288,9 @@ class MyChoose2(Choose2):
 
                     cmt2 = idc.GetCommentEx(ea, False)
                     if cmt2:
+                        print("cmt2",cmt2)
                         if self.check_isin_filter(cmt2, get_fileregion_offset(ea)):
-                            print "filter Address: ",format(ea, '#16X'),'In fliter,IGN:', cmt2
+                            print "filterEx2 Address: ",format(ea, '#16X'),'In fliter,IGN:', cmt2
                         else:
                             current_cmt = [format(ea, '#16X'), 'N', idc.GetDisasm(ea), cmt2, format(get_fileregion_offset(ea), '#16X')]
                             cmts.append(current_cmt)
@@ -239,13 +309,14 @@ class MyChoose2(Choose2):
 
  # -----------------------------------------------------------------------
 def test_choose2(modal=False):
-    global c
-    c = MyChoose2("Comments List", nb=10, modal=modal)
-    r = c.show()
+    global g_c
+    if(not g_c):
+        g_c = MyChoose2("Comments List", nb=10, modal=modal)
+    r = g_c.show()
     #c.get_all_comments() # get all comments
-    form = idaapi.get_current_tform()
-    for thing in ["A", "B"]:
-        idaapi.attach_action_to_popup(form, None, "choose2:act%s" % thing)
+    # form = idaapi.get_current_tform()
+    # for thing in ["A", "B"]:
+    #     idaapi.attach_action_to_popup(form, None, "choose2:act%s" % thing)
 
 
 # -----------------------------------------------------------------------

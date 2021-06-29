@@ -137,6 +137,24 @@ class KDInit_addHotkey(plugin_t):
 	        self.JumpPrint(lValue);
         else:
             print("getR9 error!")
+    def JumpR10(self):
+        if __EA64__:
+            lValue = self.my_get_reg_value("x10")
+        else:
+            lValue = self.my_get_reg_value("r10")
+        if(None != lValue):
+            self.JumpPrint(lValue);
+        else:
+            print("getR10 error!")
+    def JumpR11(self):
+        if __EA64__:
+            lValue = self.my_get_reg_value("x11")
+        else:
+            lValue = self.my_get_reg_value("r11")
+        if(None != lValue):
+            self.JumpPrint(lValue);
+        else:
+            print("getR11 error!")
     def JumpSP(self):
         if __EA64__:
             lValue = self.my_get_reg_value("sp")
@@ -187,6 +205,8 @@ class KDInit_addHotkey(plugin_t):
         idaapi.add_hotkey("Meta-Shift-7", self.JumpR7)
         idaapi.add_hotkey("Meta-Shift-8", self.JumpR8) 
         idaapi.add_hotkey("Meta-Shift-9", self.JumpR9)
+        idaapi.add_hotkey("Meta-Shift-a", self.JumpR10)
+        idaapi.add_hotkey("Meta-Shift-b", self.JumpR11)
         idaapi.add_hotkey("Meta-Shift-s", self.JumpSP)
         idaapi.add_hotkey("Meta-Shift-l", self.JumpLR)
         idaapi.add_hotkey("Meta-Shift-p", self.JumpPC)

@@ -25,18 +25,39 @@ def dailogInit(dialog):
         dialog_ui += str
         dialog_ui += '\n'
     return dialog_ui
-
+### ida 7.0版本
+def rebaseAddr02(base):
+    newbase = base
+    maxvalue = 0x70000000
+    if __EA64__:
+        maxvalue = 0x7000000000000000 
+    while(newbase  > maxvalue):
+        rebase_program(maxvalue, MSF_FIXONCE)
+        newbase = newbase - maxvalue
+    rebase_program(newbase, MSF_FIXONCE)
 def rebaseAddr(base):
     seglist =[];
-    segstart = get_next_seg(0)
-    while( segstart is not None ):
+    segstart = idc.get_next_seg(0)
+    while( (segstart is not None )
+         and (segstart != BADADDR)):
+        print(segstart)
+        if(not isinstance(segstart, long)):
+            segstart = segstart.startEA
         seglist.append(segstart)
-        segstart = get_next_seg(segstart.startEA)
+        segstart = idc.get_next_seg(segstart)
     for i in range(len(seglist)):
-        move_segm(seglist[i], get_fileregion_offset(seglist[i].startEA) + base, 0)
+        idc.move_segm(seglist[i], get_fileregion_offset(seglist[i]) + base, 0)
 def rebaseAddrSuper(base):
-    rebaseAddr(0)
-    rebaseAddr(base)
+    if IDA_SDK_VERSION >= 700:
+        nOldAddr = idc.ScreenEA();
+        nBaseAddr = get_imagebase();
+        ###置零
+        if(nBaseAddr > 0):
+            rebaseAddr02((BADADDR - nBaseAddr) + 1)
+        rebaseAddr02(base)
+    else:
+        rebaseAddr(0)
+        rebaseAddr(base)
 def KDRebaseAddrMain():
     nOldAddr = idc.ScreenEA();
     nNewAddr = nOldAddr + 0x1000000;
