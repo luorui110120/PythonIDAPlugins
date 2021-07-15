@@ -310,8 +310,8 @@ class MyChoose2(IDAAPI_Choose):
  # -----------------------------------------------------------------------
 def test_choose2(modal=False):
     global g_c
-    if(not g_c):
-        g_c = MyChoose2("Comments List", nb=10, modal=modal)
+    #if(not g_c):
+    g_c = MyChoose2("Comments List", nb=10, modal=modal)
     r = g_c.show()
     #c.get_all_comments() # get all comments
     # form = idaapi.get_current_tform()
