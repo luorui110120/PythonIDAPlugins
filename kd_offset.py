@@ -78,7 +78,9 @@ class KDOffset(plugin_t):
             offset = courrent_ea - values[listindex].base
         else:
             offset = get_fileregion_offset(courrent_ea)
-        print("listindex: %d, ea: 0x%x" % (listindex, courrent_ea))
+            if(-1 == offset):
+                offset = courrent_ea - get_imagebase()
+        print("listindex: %d, ea: 0x%x,offset:0x%x" % (listindex, courrent_ea, offset))
         cho=ChooserForm("goto offset", key, values=values,index=listindex, offset= offset)
         modulesobj,offset = cho.choose()
         if offset != None:
@@ -87,7 +89,10 @@ class KDOffset(plugin_t):
                 jumpto(modulesobj.base + offset)
             else:
                 print("name: None offset: 0x%x" %(offset))
-                jumpto(get_fileregion_ea(offset))
+                ea_addr = get_fileregion_ea(offset)
+                if(ea_addr == BADADDR):
+                    ea_addr = offset + get_imagebase()
+                jumpto(ea_addr)
         else:
             print("KDOffset cancel!!")
 def PLUGIN_ENTRY():

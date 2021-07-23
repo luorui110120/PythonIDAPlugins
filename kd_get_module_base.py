@@ -18,7 +18,8 @@ dialogKDGetModuleBase = [
 "get module base",    #//窗口标题
 "Please Input module name",   #//文本内容
 "<name:A:513:32::>",
-"<##Check Boxes##sendPerclip:C>>"
+"<##Check Boxes##sendPerclip:C>>",
+"<jmpAddr:C>>"
 ]
 def dailogInit(dialog):
     dialog_ui=""
@@ -32,15 +33,19 @@ def KDGetModuleBaseMain():
     StrBufForm = Form.StringArgument(513)
     bsendPerclip = 1
     bsendPerclipForm = Form.NumericArgument('N', value=bsendPerclip)
+    bJmpAddr = 1
+    bJmpAddrForm = Form.NumericArgument('N', value=bJmpAddr)
     ok = idaapi.AskUsingForm(dailogInit(dialogKDGetModuleBase),
            StrBufForm.arg,
-           bsendPerclipForm.arg)
+           bsendPerclipForm.arg,
+           bJmpAddrForm.arg)
     if ok != 1:
         print('cancel get module base!')
         return
     strBuf = StrBufForm.value
     strBuf = strBuf.replace(' ','').replace('\n', '').replace('\r', '')
     bsendPerclip = bsendPerclipForm.value
+    bJmpAddr = bJmpAddrForm.value
     gen=idc._get_modules()
     for li in gen:
         if( li.name.find(strBuf) >=0):
@@ -48,6 +53,8 @@ def KDGetModuleBaseMain():
             print("base: 0x%x" %li.base);
             if(1 == bsendPerclip):
                 pyperclip.copy('0x%X' % li.base)
+            if(1 == bJmpAddr):
+                Jump(li.base)
             return
     print("find fail!!")
 

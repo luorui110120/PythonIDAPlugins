@@ -61,6 +61,7 @@ def rebaseAddrSuper(base):
 def KDRebaseAddrMain():
     nOldAddr = idc.ScreenEA();
     nNewAddr = nOldAddr + 0x1000000;
+    ###也可以使用  get_imagebase() 函数获取基地址
     nBaseAddr = nOldAddr - get_fileregion_offset(nOldAddr);
     nOldBase = nBaseAddr
     bitType = 0xffffffff

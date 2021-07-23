@@ -23,7 +23,8 @@ dialogKDDataDump = [
 "<Len:R>>",       #//组内的第二个
 "<##Output##File:R>",   #//给单选框提供组
 "<Print:R>>",        #//组内的第二个
-"<##Check Boxes##StartAddr set segm_start:C>>"
+"<##Check Boxes##StartAddr set segm_start:C>>",
+"<SendPerclip:C>>"
 ]
 def dailogInit(dialog):
     dialog_ui=""
@@ -38,8 +39,10 @@ def strToHexStr(strbuf):
         bytestrs += ('%02x' % ord(c))
     return bytestrs
 
-def ida_dump_ask_file(file_path, ea_addr, size):
+def ida_dump_ask_file(file_path, ea_addr, size, perclipCheck):
     savepath = ask_file(1, file_path, "sava path")
+    if((savepath != None) and (1 == perclipCheck)):
+        pyperclip.copy('%s' % savepath)
     dumpMemoryToFile(savepath, ea_addr, size)
 def dumpMemoryToFile(savepath, ea_addr, size):
     if savepath is None:
@@ -59,7 +62,7 @@ def dumpMemoryToFile(savepath, ea_addr, size):
 g_dumpUi = None
 
     ## 因为 ida 的bug, 目前只找到这种变扭的实现方式,不能在ida 主线程中调用ui的api;
-def my_dump_qt5_ask_file(file_path, ea_addr, size):
+def my_dump_qt5_ask_file(file_path, ea_addr, size, perclipCheck):
     class MyWindow(QtWidgets.QWidget):
         def __init__(self, file_path, ea_addr, size):
             super(MyWindow,self).__init__()
@@ -70,6 +73,7 @@ def my_dump_qt5_ask_file(file_path, ea_addr, size):
             self.file_path = file_path
             self.ea_addr = ea_addr
             self.size = size
+            self.perclip_flags = perclipCheck
             
 
         def msg(self):
@@ -81,6 +85,8 @@ def my_dump_qt5_ask_file(file_path, ea_addr, size):
             #print(fileName1,filetype)
             if len(file_path) > 0:
                 dumpMemoryToFile(file_path, self.ea_addr, self.size)
+                if(1 == self.perclip_flags):
+                    pyperclip.copy('%s' % file_path)
             self.close()
     def action(add):
         add.myButton.click()
@@ -94,6 +100,8 @@ def my_dump_qt5_ask_file(file_path, ea_addr, size):
     t1.start()
 
 def KDDataDumpMain():
+    global g_dumpUi
+    g_dumpUi = None
     nStartAddres = idc.ScreenEA();
     nEndAddres = idc.SegEnd(nStartAddres);
     size = 0;
@@ -101,17 +109,19 @@ def KDDataDumpMain():
     EndAddresForm = Form.NumericArgument('M', value=nEndAddres)
     AddrRadioForm = Form.NumericArgument('N', value=0)
     OutRadioForm = Form.NumericArgument('N', value=0)
-    CheckForm = Form.NumericArgument('N', value=0)
+    SegCheckForm = Form.NumericArgument('N', value=0)
+    PerclipCheckForm = Form.NumericArgument('N', value=0)
     ok = idaapi.AskUsingForm(dailogInit(dialogKDDataDump),
            StartAddresForm.arg,
            EndAddresForm.arg,
            AddrRadioForm.arg,
            OutRadioForm.arg,
-           CheckForm.arg)
+           SegCheckForm.arg,
+           PerclipCheckForm.arg)
     if ok != 1:
         print 'cancel dump!'
         return
-    if CheckForm.value == 1:
+    if SegCheckForm.value == 1:
         StartAddresForm.value = idc.SegStart(StartAddresForm.value)
     if AddrRadioForm.value == 0:
         size = EndAddresForm.value - StartAddresForm.value
@@ -124,16 +134,19 @@ def KDDataDumpMain():
             #savepath = idc.AskFile(1, strpath, "sava path")
             ##//为了兼容 mac 11.4版本
             if(platform.platform() == 'Darwin-20.5.0-x86_64-i386-64bit'):
-                my_dump_qt5_ask_file(strpath, StartAddresForm.value, size)
+                my_dump_qt5_ask_file(strpath, StartAddresForm.value, size, PerclipCheckForm.value)
             else:
-                ida_dump_ask_file(strpath, StartAddresForm.value, size)
+                ida_dump_ask_file(strpath, StartAddresForm.value, size, PerclipCheckForm.value)
         else:
             buffer = idc.GetManyBytes(StartAddresForm.value, size, False)
             if buffer is not None:
+                hexstr = strToHexStr(buffer)
                 print("output addr:0x%08X, Size:0x%08X" % (StartAddresForm.value,size))
                 print("=========hex=========")
-                print(strToHexStr(buffer))
+                print(hexstr)
                 print("=========end=========")
+                if(1 == PerclipCheckForm.value):
+                    pyperclip.copy('%s' % hexstr)
             else:
                 print "get memory bytes error"
     else:
