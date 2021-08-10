@@ -56,7 +56,9 @@ class KDOffset(plugin_t):
     def KDFindBase(self, modules_list, ea):
         for i in range(len(modules_list)):
             if (modules_list[i].base <= ea) and (ea < (modules_list[i].base + modules_list[i].size)):
-                if(modules_list[i].name.find(idc.SegName(ea)) >= 0):
+                moname = idc.SegName(ea)
+                if(modules_list[i].name.find(moname) >= 0 or
+                    modules_list[i].name.find(moname.replace('_','-')) >= 0):
                     return i
         return -1
     def KDOffsetMain(self):
