@@ -8,9 +8,34 @@ import idautils
 import idc
 import base64
 import json
-from idaapi import Choose2
 
-if IDA_SDK_VERSION >= 700:
+
+
+if IDA_SDK_VERSION == 720:
+    __EA64__ = BADADDR == 0xFFFFFFFFFFFFFFFF
+    IDAAPI_ScreenEA     = get_screen_ea
+    IDAAPI_IsCode       = is_code
+    IDAAPI_DelItems     = del_items
+    IDAAPI_MakeCode     = create_insn
+    IDAAPI_GetFlags     = get_full_flags
+    IDAAPI_IsLoaded     = is_loaded
+    IDAAPI_HasValue     = has_value
+    IDAAPI_GetBptQty    = get_bpt_qty
+    IDAAPI_GetBptEA     = idc.get_bpt_ea
+    IDAAPI_GetBptAttr   = idc.get_bpt_attr
+    IDAAPI_SegStart     = idc.get_segm_start
+    IDAAPI_SegEnd       = idc.get_segm_end
+    IDAAPI_GetBytes     = idc.get_bytes
+    IDAAPI_AskYN        = idc.ask_yn
+    IDAAPI_AskFile      = ask_file
+    IDAAPI_AskLong      = ask_long
+    IDAAPI_NextHead     = idc.next_head
+    IDAAPI_GetDisasm    = lambda a, b: tag_remove(generate_disasm_line(a, b))
+    IDAAPI_NextThat     = next_that
+    IDAAPI_Jump         = jumpto
+    # classes
+    IDAAPI_Choose       = Choose
+elif IDA_SDK_VERSION >= 700:
     # functions
     IDAAPI_ScreenEA     = get_screen_ea
     IDAAPI_IsCode       = is_code
@@ -63,9 +88,9 @@ else:
 KDShowAllCommentsFilterList = ['void', 'char', 'int', 'switch', 'jump', 'size_t', 'dw', 'hFile', 'lp', 'nSize', 'Alternative']
 g_flags = True;
 g_c = None
-class chooser_handler_t(idaapi.action_handler_t):
+class chooser_handler_t(action_handler_t):
     def __init__(self, thing):
-        idaapi.action_handler_t.__init__(self)
+        action_handler_t.__init__(self)
         self.thing = thing
 
     def activate(self, ctx):
@@ -76,7 +101,7 @@ class chooser_handler_t(idaapi.action_handler_t):
         pass
 
     def update(self, ctx):
-        return idaapi.AST_ENABLE_FOR_FORM if idaapi.is_chooser_tform(ctx.form_type) else idaapi.AST_DISABLE_FOR_FORM
+        return AST_ENABLE_FOR_FORM if is_chooser_tform(ctx.form_type) else AST_DISABLE_FOR_FORM
 
 
 class MyChoose2(IDAAPI_Choose):
@@ -334,7 +359,7 @@ def test_choose2_embedded():
             c.Close()
 
 
-class show_cmts_plugin_t(idaapi.plugin_t):
+class show_cmts_plugin_t(plugin_t):
     flags = 0
     wanted_name="KDShowAllComments"
     wanted_hotkey="Meta-;"
@@ -343,7 +368,7 @@ class show_cmts_plugin_t(idaapi.plugin_t):
 
     def init(self):
         msg("Ida plugin KDShowAllComments init.\n")
-        return idaapi.PLUGIN_OK
+        return PLUGIN_OK
 
     def run(self, arg):
         print "Start to analyzing all comments in idb..."

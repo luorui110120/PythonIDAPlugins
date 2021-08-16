@@ -9,7 +9,82 @@ import os
 import base64
 import subprocess
 from idaapi import *
-from idc import *
+import idc
+
+if IDA_SDK_VERSION == 720:
+    __EA64__ = BADADDR == 0xFFFFFFFFFFFFFFFF
+    IDAAPI_ScreenEA     = get_screen_ea
+    IDAAPI_IsCode       = is_code
+    IDAAPI_DelItems     = del_items
+    IDAAPI_MakeCode     = create_insn
+    IDAAPI_GetFlags     = get_full_flags
+    IDAAPI_IsLoaded     = is_loaded
+    IDAAPI_HasValue     = has_value
+    IDAAPI_GetBptQty    = get_bpt_qty
+    IDAAPI_GetBptEA     = idc.get_bpt_ea
+    IDAAPI_GetBptAttr   = idc.get_bpt_attr
+    IDAAPI_SegStart     = idc.get_segm_start
+    IDAAPI_SegEnd       = idc.get_segm_end
+    IDAAPI_GetBytes     = idc.get_bytes
+    IDAAPI_AskYN        = idc.ask_yn
+    IDAAPI_AskFile      = ask_file
+    IDAAPI_AskLong      = ask_long
+    IDAAPI_NextHead     = idc.next_head
+    IDAAPI_GetDisasm    = lambda a, b: tag_remove(generate_disasm_line(a, b))
+    IDAAPI_NextThat     = next_that
+    IDAAPI_Jump         = jumpto
+    # classes
+    IDAAPI_Choose       = Choose
+elif IDA_SDK_VERSION >= 700:
+    # functions
+    IDAAPI_ScreenEA     = get_screen_ea
+    IDAAPI_IsCode       = is_code
+    IDAAPI_DelItems     = del_items
+    IDAAPI_MakeCode     = create_insn
+    IDAAPI_GetFlags     = get_full_flags
+    IDAAPI_SetColor     = set_color
+    IDAAPI_IsLoaded     = is_loaded
+    IDAAPI_HasValue     = has_value
+    IDAAPI_GetBptQty    = get_bpt_qty
+    IDAAPI_GetBptEA     = get_bpt_ea
+    IDAAPI_GetBptAttr   = get_bpt_attr
+    IDAAPI_SegStart     = get_segm_start
+    IDAAPI_SegEnd       = get_segm_end
+    IDAAPI_GetBytes     = get_bytes
+    IDAAPI_AskYN        = ask_yn
+    IDAAPI_AskFile      = ask_file
+    IDAAPI_AskLong      = ask_long
+    IDAAPI_NextHead     = next_head
+    IDAAPI_GetDisasm    = lambda a, b: tag_remove(generate_disasm_line(a, b))
+    IDAAPI_NextThat     = next_that
+    IDAAPI_Jump         = jumpto
+    # classes
+    IDAAPI_Choose       = Choose
+else:
+    # functions
+    IDAAPI_ScreenEA     = ScreenEA
+    IDAAPI_IsCode       = isCode
+    IDAAPI_DelItems     = MakeUnkn
+    IDAAPI_MakeCode     = MakeCode
+    IDAAPI_GetFlags     = getFlags
+    IDAAPI_SetColor     = SetColor
+    IDAAPI_IsLoaded     = isLoaded
+    IDAAPI_HasValue     = hasValue
+    IDAAPI_GetBptQty    = GetBptQty
+    IDAAPI_GetBptEA     = GetBptEA
+    IDAAPI_GetBptAttr   = GetBptAttr
+    IDAAPI_SegStart     = SegStart
+    IDAAPI_SegEnd       = SegEnd
+    IDAAPI_GetBytes     = get_many_bytes
+    IDAAPI_AskYN        = AskYN
+    IDAAPI_AskFile      = AskFile
+    IDAAPI_AskLong      = AskLong
+    IDAAPI_NextHead     = NextHead
+    IDAAPI_GetDisasm    = GetDisasmEx
+    IDAAPI_NextThat     = nextthat
+    IDAAPI_Jump         = Jump
+    # classes
+    IDAAPI_Choose       = Choose2
 
 def strToHexStr(strbuf):
     bytestrs = ""
@@ -33,16 +108,16 @@ class KDInit_addHotkey(plugin_t):
         msg("kdinit_hotkey\n")
 
     def my_get_reg_value(self, register):
-        rv = idaapi.regval_t()
-        if False == idaapi.get_reg_val(register, rv):
+        rv = regval_t()
+        if False == get_reg_val(register, rv):
             return None
         current_addr = rv.ival
         return current_addr
     def JumpPrint(self, addr):
-        Jump(addr)
-        print("Jump 0x%x" % addr)
+        
+        print("Jump 0x%x, res:%r" % (addr,IDAAPI_Jump(addr)))
     def JumpDword(self):
-        addr = ScreenEA();
+        addr = IDAAPI_ScreenEA();
         if __EA64__:
             self.JumpPrint(Qword(addr));
         else:
@@ -184,35 +259,35 @@ class KDInit_addHotkey(plugin_t):
             print("getPC error!")
         ## //跳到函数开头
     def GotoCursorFuncStart(self):
-        startaddr=GetFunctionAttr(ScreenEA(),FUNCATTR_START);
-        Jump(startaddr);
+        startaddr=idc.GetFunctionAttr(IDAAPI_ScreenEA(),idc.FUNCATTR_START);
+        IDAAPI_Jump(startaddr);
     #### //跳到函数结尾
     def GotoCursorFuncEnd(self):
-        endaddr=GetFunctionAttr(ScreenEA(),FUNCATTR_END);
-        endaddr=FindCode(endaddr,SEARCH_UP);
-        Jump(endaddr);
+        endaddr=idc.GetFunctionAttr(IDAAPI_ScreenEA(),idc.FUNCATTR_END);
+        endaddr=idc.FindCode(endaddr,SEARCH_UP);
+        IDAAPI_Jump(endaddr);
     def OpenCurrentDir(self):
         subprocess.check_output('open .',shell=True)
     def init_reg_hotkey(self):
-        idaapi.add_hotkey("Meta-Shift-d", self.JumpDword)
-        idaapi.add_hotkey("Meta-Shift-0", self.JumpR0) 
-        idaapi.add_hotkey("Meta-Shift-1", self.JumpR1) 
-        idaapi.add_hotkey("Meta-Shift-2", self.JumpR2) 
-        idaapi.add_hotkey("Meta-Shift-3", self.JumpR3) 
-        idaapi.add_hotkey("Meta-Shift-4", self.JumpR4)
-        idaapi.add_hotkey("Meta-Shift-5", self.JumpR5)
-        idaapi.add_hotkey("Meta-Shift-6", self.JumpR6)
-        idaapi.add_hotkey("Meta-Shift-7", self.JumpR7)
-        idaapi.add_hotkey("Meta-Shift-8", self.JumpR8) 
-        idaapi.add_hotkey("Meta-Shift-9", self.JumpR9)
-        idaapi.add_hotkey("Meta-Shift-a", self.JumpR10)
-        idaapi.add_hotkey("Meta-Shift-b", self.JumpR11)
-        idaapi.add_hotkey("Meta-Shift-s", self.JumpSP)
-        idaapi.add_hotkey("Meta-Shift-l", self.JumpLR)
-        idaapi.add_hotkey("Meta-Shift-p", self.JumpPC)
-        idaapi.add_hotkey("Meta-[", self.GotoCursorFuncStart)
-        idaapi.add_hotkey("Meta-]", self.GotoCursorFuncEnd)
-        idaapi.add_hotkey("Meta-Shift-o", self.OpenCurrentDir)
+        add_hotkey("Meta-Shift-d", self.JumpDword)
+        add_hotkey("Meta-Shift-0", self.JumpR0) 
+        add_hotkey("Meta-Shift-1", self.JumpR1) 
+        add_hotkey("Meta-Shift-2", self.JumpR2) 
+        add_hotkey("Meta-Shift-3", self.JumpR3) 
+        add_hotkey("Meta-Shift-4", self.JumpR4)
+        add_hotkey("Meta-Shift-5", self.JumpR5)
+        add_hotkey("Meta-Shift-6", self.JumpR6)
+        add_hotkey("Meta-Shift-7", self.JumpR7)
+        add_hotkey("Meta-Shift-8", self.JumpR8) 
+        add_hotkey("Meta-Shift-9", self.JumpR9)
+        add_hotkey("Meta-Shift-a", self.JumpR10)
+        add_hotkey("Meta-Shift-b", self.JumpR11)
+        add_hotkey("Meta-Shift-s", self.JumpSP)
+        add_hotkey("Meta-Shift-l", self.JumpLR)
+        add_hotkey("Meta-Shift-p", self.JumpPC)
+        add_hotkey("Meta-[", self.GotoCursorFuncStart)
+        add_hotkey("Meta-]", self.GotoCursorFuncEnd)
+        add_hotkey("Meta-Shift-o", self.OpenCurrentDir)
 
 def PLUGIN_ENTRY():
     return KDInit_addHotkey()

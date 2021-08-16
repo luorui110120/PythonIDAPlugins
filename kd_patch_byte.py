@@ -10,6 +10,81 @@ import os
 import idc
 from idaapi import *
 
+if IDA_SDK_VERSION == 720:
+    __EA64__ = BADADDR == 0xFFFFFFFFFFFFFFFF
+    IDAAPI_ScreenEA     = get_screen_ea
+    IDAAPI_IsCode       = is_code
+    IDAAPI_DelItems     = del_items
+    IDAAPI_MakeCode     = create_insn
+    IDAAPI_GetFlags     = get_full_flags
+    IDAAPI_IsLoaded     = is_loaded
+    IDAAPI_HasValue     = has_value
+    IDAAPI_GetBptQty    = get_bpt_qty
+    IDAAPI_GetBptEA     = idc.get_bpt_ea
+    IDAAPI_GetBptAttr   = idc.get_bpt_attr
+    IDAAPI_SegStart     = idc.get_segm_start
+    IDAAPI_SegEnd       = idc.get_segm_end
+    IDAAPI_GetBytes     = idc.get_bytes
+    IDAAPI_AskYN        = idc.ask_yn
+    IDAAPI_AskFile      = ask_file
+    IDAAPI_AskLong      = ask_long
+    IDAAPI_NextHead     = idc.next_head
+    IDAAPI_GetDisasm    = lambda a, b: tag_remove(generate_disasm_line(a, b))
+    IDAAPI_NextThat     = next_that
+    IDAAPI_Jump         = jumpto
+    # classes
+    IDAAPI_Choose       = Choose
+elif IDA_SDK_VERSION >= 700:
+    # functions
+    IDAAPI_ScreenEA     = get_screen_ea
+    IDAAPI_IsCode       = is_code
+    IDAAPI_DelItems     = del_items
+    IDAAPI_MakeCode     = create_insn
+    IDAAPI_GetFlags     = get_full_flags
+    IDAAPI_SetColor     = set_color
+    IDAAPI_IsLoaded     = is_loaded
+    IDAAPI_HasValue     = has_value
+    IDAAPI_GetBptQty    = get_bpt_qty
+    IDAAPI_GetBptEA     = get_bpt_ea
+    IDAAPI_GetBptAttr   = get_bpt_attr
+    IDAAPI_SegStart     = get_segm_start
+    IDAAPI_SegEnd       = get_segm_end
+    IDAAPI_GetBytes     = get_bytes
+    IDAAPI_AskYN        = ask_yn
+    IDAAPI_AskFile      = ask_file
+    IDAAPI_AskLong      = ask_long
+    IDAAPI_NextHead     = next_head
+    IDAAPI_GetDisasm    = lambda a, b: tag_remove(generate_disasm_line(a, b))
+    IDAAPI_NextThat     = next_that
+    IDAAPI_Jump         = jumpto
+    # classes
+    IDAAPI_Choose       = Choose
+else:
+    # functions
+    IDAAPI_ScreenEA     = ScreenEA
+    IDAAPI_IsCode       = isCode
+    IDAAPI_DelItems     = MakeUnkn
+    IDAAPI_MakeCode     = MakeCode
+    IDAAPI_GetFlags     = getFlags
+    IDAAPI_SetColor     = SetColor
+    IDAAPI_IsLoaded     = isLoaded
+    IDAAPI_HasValue     = hasValue
+    IDAAPI_GetBptQty    = GetBptQty
+    IDAAPI_GetBptEA     = GetBptEA
+    IDAAPI_GetBptAttr   = GetBptAttr
+    IDAAPI_SegStart     = SegStart
+    IDAAPI_SegEnd       = SegEnd
+    IDAAPI_GetBytes     = get_many_bytes
+    IDAAPI_AskYN        = AskYN
+    IDAAPI_AskFile      = AskFile
+    IDAAPI_AskLong      = AskLong
+    IDAAPI_NextHead     = NextHead
+    IDAAPI_GetDisasm    = GetDisasmEx
+    IDAAPI_NextThat     = nextthat
+    IDAAPI_Jump         = Jump
+    # classes
+    IDAAPI_Choose       = Choose2
+
 dialogKDPatchByte = [
 "STARTITEM 0",         #//让第一项获得焦点
 "Patch Data",    #//窗口标题
@@ -98,7 +173,7 @@ def KDPatchByteMain():
     XorWriteRadioForm = Form.NumericArgument('N', value=0)
     SerialRadioForm = Form.NumericArgument('N', value=0)
     CheckForm = Form.NumericArgument('N', value=0)
-    ok = idaapi.AskUsingForm(dailogInit(dialogKDPatchByte),
+    ok = AskUsingForm(dailogInit(dialogKDPatchByte),
             StrBufForm.arg,
             AddresForm.arg,
             CountForm.arg,

@@ -111,7 +111,7 @@ def KDDataDumpMain():
     OutRadioForm = Form.NumericArgument('N', value=0)
     SegCheckForm = Form.NumericArgument('N', value=0)
     PerclipCheckForm = Form.NumericArgument('N', value=0)
-    ok = idaapi.AskUsingForm(dailogInit(dialogKDDataDump),
+    ok = AskUsingForm(dailogInit(dialogKDDataDump),
            StartAddresForm.arg,
            EndAddresForm.arg,
            AddrRadioForm.arg,
