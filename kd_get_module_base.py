@@ -105,7 +105,7 @@ def dailogInit(dialog):
 def KDGetModuleBaseMain():
     nOffset = get_fileregion_offset(idc.ScreenEA());
     StrBufForm = Form.StringArgument(513)
-    bsendPerclip = 1
+    bsendPerclip = 0
     bsendPerclipForm = Form.NumericArgument('N', value=bsendPerclip)
     bJmpAddr = 1
     bJmpAddrForm = Form.NumericArgument('N', value=bJmpAddr)

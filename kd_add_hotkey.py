@@ -10,6 +10,9 @@ import base64
 import subprocess
 from idaapi import *
 import idc
+from aaf import adb
+
+
 
 if IDA_SDK_VERSION == 720:
     __EA64__ = BADADDR == 0xFFFFFFFFFFFFFFFF
@@ -86,11 +89,67 @@ else:
     # classes
     IDAAPI_Choose       = Choose2
 
+
+
+ADB_PATH = os.environ['HOME'] + os.sep +"bin" +os.sep + "adb"
+g_adb=adb.AdbWrapper(ADB_PATH)
+g_config_file_path=idaapi.idadir("plugins") + "/kd_attach_config.txt"
+
+def file_to_str(inpath):
+    with open(inpath, 'rb') as fr:
+        return fr.read()
+    return None
+def str_to_file(instr, inpath):
+    with open(inpath, 'wb') as fw:
+        fw.write(instr)
 def strToHexStr(strbuf):
     bytestrs = ""
     for c in strbuf:
         bytestrs += ('%02x' % ord(c))
     return bytestrs
+def off_to_ea(moduleName, offaddr):
+    base = idc.GetFirstModule()
+    while (base != None) and (idc.GetModuleName(base).find(moduleName) == -1):
+        base = idc.GetNextModule(base)
+    if base == None:
+        print "failed to find module: " + moduleName
+        return None
+    else:
+        return base + offaddr
+
+def adb_process_name_to_pid(in_process_name):
+    global g_adb
+    ps = g_adb.callLostReturn(['shell', 'ps']).splitlines()
+    for x in ps:
+        xs = x.split()
+        if in_process_name in xs:
+            print xs
+            pid=None
+            for process in xs:
+                if(None ==pid and process.isdigit()):
+                    pid = int(process)
+                if in_process_name == process:
+                    return pid
+    return None
+def kd_attach(in_process_name=None, ip='localhost', ida_port=23946):
+    global g_config_file_path
+    pname = ''
+    if(None == in_process_name):
+        pname = file_to_str(g_config_file_path)
+    else:
+        pname = in_process_name
+    pid=adb_process_name_to_pid(pname)
+    if(None == pid):
+        print('fail no process !!')
+    else:
+        idc.LoadDebugger("armlinux", use_remote=1)
+        idc.SetRemoteDebugger(ip, "", ida_port)
+        status = idc.AttachProcess(pid, -1)
+        if(status >= 0):
+            str_to_file(pname, g_config_file_path)
+def kd_attach_config():
+    global g_config_file_path
+    print("attach config:%s"%file_to_str(g_config_file_path))
 
 class KDInit_addHotkey(plugin_t):
     flags=0
