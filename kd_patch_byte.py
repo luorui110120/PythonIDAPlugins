@@ -93,7 +93,8 @@ dialogKDPatchByte = [
 "<Addr   (hex):M:32:16::>", #//一个16进制数
 "<Count  (hex):M:32:16::>", #//一个16进制数
 "<##Cover Or XorWrite##Write:R>",     #//覆盖写入或者疑惑写入
-"<XorWrite:R>",       #//组内的第二个
+"<String:R>",       #//组内的第二个
+"<XorWrite:R>",       #//组内的第三个
 "<CompulsoryWrite:R>>", #//强制 写入 代用 PatchByte 函数,在新生成的段也可以写入
 "<##Serial Write##Byte:R>",   #//给单选框提供组
 "<DWord:R>",        #//组内的第二个
@@ -191,6 +192,8 @@ def KDPatchByteMain():
     nCount = CountForm.value
     #// 过滤特殊字符
     strBuf = StrBufForm.value
+    if(XorWriteRadioForm.value == 1):
+        strBuf = strToHexStr(strBuf)
     strBuf = strBuf.replace(' ','').replace('\n', '').replace('\r', '')
     #// 如果长度为零那么就是通过文件导入的方式patch
     if(len(strBuf) == 0):
@@ -218,8 +221,10 @@ def KDPatchByteMain():
     #//将 buf 转化为 list  方便后面操作
     listbytes = strToList(strBuf)
     if(XorWriteRadioForm.value == 1):
-        XorWriteRadioFormStr = "XorWrite"
+        XorWriteRadioFormStr = "String"
     if(XorWriteRadioForm.value == 2):
+        XorWriteRadioFormStr = "XorWrite"
+    if(XorWriteRadioForm.value == 3):
         XorWriteRadioFormStr = "CompulsoryWrite"
     if SerialRadioForm.value == 1:
         listbytes=listToSerial(listbytes, 4)
@@ -248,7 +253,7 @@ def KDPatchByteMain():
             if(nPatchLogFlags > 0):
                 print("==========srcData==========")
                 print strToHexStr(readBuffer)
-            if(XorWriteRadioForm.value == 1):
+            if(XorWriteRadioForm.value == 2):
                 patchBuf = listToStr(listXorData(strToList(readBuffer),listbytes))
             else:
                 patchBuf = listToStr(listbytes)
@@ -261,7 +266,7 @@ def KDPatchByteMain():
             refresh_idaview_anyway();
         else:
             print "get memory bytes error"
-    elif(XorWriteRadioForm.value == 2):
+    elif(XorWriteRadioForm.value == 3):
         addr_index = 0
         for inbyte in listbytes:
             PatchByte(nAddr + addr_index, inbyte)
