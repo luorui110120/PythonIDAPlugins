@@ -93,7 +93,7 @@ else:
 
 ADB_PATH = os.environ['HOME'] + os.sep +"bin" +os.sep + "adb"
 g_adb=adb.AdbWrapper(ADB_PATH)
-g_config_file_path=idaapi.idadir("plugins") + "/kd_attach_config.txt"
+g_config_file_path=idadir("plugins") + "/kd_attach_config.txt"
 
 def file_to_str(inpath):
     with open(inpath, 'rb') as fr:

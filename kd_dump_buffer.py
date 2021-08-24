@@ -104,6 +104,11 @@ def KDDataDumpMain():
     g_dumpUi = None
     nStartAddres = idc.ScreenEA();
     nEndAddres = idc.SegEnd(nStartAddres);
+    ###添加选择默认值
+    if(BADADDR != read_selection_start()):
+        nStartAddres = read_selection_start()
+    if(BADADDR != read_selection_end()):
+        nEndAddres = read_selection_end()
     size = 0;
     StartAddresForm = Form.NumericArgument('M', value=nStartAddres)
     EndAddresForm = Form.NumericArgument('M', value=nEndAddres)

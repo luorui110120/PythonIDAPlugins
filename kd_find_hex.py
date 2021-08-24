@@ -229,7 +229,7 @@ class KDFindHex(plugin_t):
                 jumpto(listSearchOut[0])
             print("==========Out List==========")
             for listaddr in listSearchOut:
-                print("0x%8X" % listaddr)
+                print("0x%X" % listaddr)
         else:
             print("The match was not found !!!")
         print("=========Search END============")
