@@ -104,11 +104,13 @@ class KDFindHex(plugin_t):
         "Feature code search",    #//窗口标题
         "The Feature Code Search Fuzzy Matching Use ? Replace"+ "\n"+\
         "Please enter the hexadecimal data size less 0x200",   #//文本内容
-        "<HexStr:A:513:32::>",  # //第一项字符串数据
+        "<Input Str:A:513:32::>",  # //第一项字符串数据
         "<StartAddr   (hex):M:32:16::>", #//一个16进制数
         "<EndAddr/Len (hex):M:32:16::>", #//一个16进制数
         "<##Option##EndAddr:R>",   #//给单选框提供组
         "<Len:R>>",       #//组内的第二个
+        "<##Type##HexStr:R>",   #//给单选框提供组
+        "<RegularStr:R>>",       #//组内的第二个
         "<##Check Boxes##Jump to the first result:C>>",
         "<Set address to head of the section:C>>",
         "<Search all segments:C>>"
@@ -118,6 +120,7 @@ class KDFindHex(plugin_t):
             dialog_ui += str
             dialog_ui += '\n'
         return dialog_ui
+
     @staticmethod
     def searchReMatch(pattern, strbuf, baseAddr):
         listRet=[]
@@ -145,6 +148,7 @@ class KDFindHex(plugin_t):
         nEndAddr = idc.SegEnd(nStartAddr);
         nSearchBufSize = 0;
         nEndTypeRadio = 0;
+        nFindTypeRadio = 0;
         bJmpFirst=1;
         bSetStartAddr=0;
         bSearchAllSegm=0;
@@ -155,6 +159,7 @@ class KDFindHex(plugin_t):
         nStartAddrForm = Form.NumericArgument('M', value=nStartAddr)
         nEndAddrForm = Form.NumericArgument('M', value=nEndAddr)
         nEndTypeRadioForm = Form.NumericArgument('N', value=nEndTypeRadio)
+        nFindTypeRadioForm = Form.NumericArgument('N', value=nFindTypeRadio)
         bJmpFirstForm = Form.NumericArgument('N', value=bJmpFirst)
         bSetStartAddrForm = Form.NumericArgument('N', value=bSetStartAddr)
         bSearchAllSegmForm = Form.NumericArgument('N', value=bSearchAllSegm)
@@ -163,6 +168,7 @@ class KDFindHex(plugin_t):
                 nStartAddrForm.arg,
                 nEndAddrForm.arg,
                 nEndTypeRadioForm.arg,
+                nFindTypeRadioForm.arg,
                 bJmpFirstForm.arg,
                 bSetStartAddrForm.arg,
                 bSearchAllSegmForm.arg,)
@@ -174,25 +180,32 @@ class KDFindHex(plugin_t):
             nStartAddr=nStartAddrForm.value
             nEndAddr=nEndAddrForm.value
             nEndTypeRadio=nEndTypeRadioForm.value
+            nFindTypeRadio=nFindTypeRadioForm.value
             bJmpFirst=bJmpFirstForm.value
             bSetStartAddr=bSetStartAddrForm.value
             bSearchAllSegm=bSearchAllSegmForm.value
         #####变量初始化处理
-        strInputHexBuf = strInputHexBuf.replace(' ','').replace('\n', '').replace('\r', '').upper()
-        if nStartAddr > nEndAddr:
-            Warning('Error !! EndAddr less StartAddr!')
-            return
-        if((len(strInputHexBuf) % 2) > 0):
-            print "The data entered are not a multiple of two !!"
-            print "Illegal characters: %s" % strInputHexBuf
-            Warning("The data entered are not a multiple of two !!")
-            return
-        else:
-            if re.match('\A[\?0-9\?a-fA-F]+\Z',strInputHexBuf) is None:
-                print("The typed string is present in an illegal character!")
-                print "Illegal characters: %s" % strInputHexBuf
-                Warning("The typed string is present in an illegal character!")
+        #print('nFindTypeRadio',nFindTypeRadio)
+        ###  比如下面的正则表达式   """98[0-9A-F]{0,4}F8""" 这样就可以在中间添加条件进行匹配了, 可包含中间的 0 或 4  个字节
+        if(0 == nFindTypeRadio):
+            strInputHexBuf = strInputHexBuf.replace(' ','').replace('\n', '').replace('\r', '').upper()
+            if nStartAddr > nEndAddr:
+                Warning('Error !! EndAddr less StartAddr!')
                 return
+            if((len(strInputHexBuf) % 2) > 0):
+                print "The data entered are not a multiple of two !!"
+                print "Illegal characters: %s" % strInputHexBuf
+                Warning("The data entered are not a multiple of two !!")
+                return
+            else:
+                if re.match('\A[\?0-9\?a-fA-F]+\Z',strInputHexBuf) is None:
+                    print("The typed string is present in an illegal character!")
+                    print "Illegal characters: %s" % strInputHexBuf
+                    Warning("The typed string is present in an illegal character!")
+                    return
+            ####### 正则表达式中 . 就是od中的?
+            strInputHexBuf = strInputHexBuf.replace('?', '.')
+
         ####################
         print("==========KDFindHex Start Search==========")
         if bSearchAllSegm == 0:
@@ -202,22 +215,20 @@ class KDFindHex(plugin_t):
                 nSearchBufSize = nEndAddr
             else:
                 nSearchBufSize = nEndAddr - nStartAddr
-            print("search addr:0x%08X, size:0x%X, pattern:%s" %(nStartAddr, nSearchBufSize,strInputHexBuf))
+            print("search addr:0x%X, size:0x%X, type:%d ,pattern:%s" %(nStartAddr, nSearchBufSize, nFindTypeRadio, strInputHexBuf))
             if idc.isLoaded(nStartAddr) and idc.isLoaded(nStartAddr + nSearchBufSize - 1):
                 strSearchBuf = idc.GetManyBytes(nStartAddr, nSearchBufSize, False)
                 if strSearchBuf is None:
                     print("read Search Buff Fail!")
                     return
                     ######## 正则表达式中 . 就是od中的?
-                listSearchOut = KDFindHex.searchReMatch(strInputHexBuf.replace('?', '.'), strSearchBuf.encode('hex').upper(),nStartAddr)
+                listSearchOut = KDFindHex.searchReMatch(strInputHexBuf, strSearchBuf.encode('hex').upper(),nStartAddr)
             else:
                 Warning('Error !! Invalid address!')
                 return 
         else:
             print("search All Segm, pattern:%s" %(strInputHexBuf))
             segm = get_next_seg(0)
-            ####### 正则表达式中 . 就是od中的?
-            strInputHexBuf = strInputHexBuf.replace('?', '.')
             ###### //查询所有 段中的内容
             while( segm is not None ):
                 buf = idc.GetManyBytes(segm.startEA, segm.size(), False)
