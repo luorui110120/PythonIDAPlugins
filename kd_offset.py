@@ -58,7 +58,7 @@ class KDOffset(plugin_t):
             if (modules_list[i].base <= ea) and (ea < (modules_list[i].base + modules_list[i].size)):
                 moname = idc.SegName(ea)
                 if(modules_list[i].name.find(moname) >= 0 or
-                    modules_list[i].name.find(moname.replace('_','-')) >= 0):
+                    modules_list[i].name.find(moname) >= 0):
                     return i
         return -1
     def KDOffsetMain(self):
@@ -72,7 +72,7 @@ class KDOffset(plugin_t):
             mitem = module_item()
             mitem.base = li.base
             mitem.size = li.size
-            mitem.name = li.name
+            mitem.name = li.name.replace('-','_').replace('+','_')
             values.append(mitem)
             key.append(li.name)
         listindex = self.KDFindBase(values, courrent_ea)
